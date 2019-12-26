@@ -183,6 +183,7 @@ func (self *sipMsg) AppendHeader(hdr sippy_header.SipHeader) {
         self.to = t
     case *sippy_header.SipMaxForwards:
         self.maxforwards = t
+        return
     case *sippy_header.SipVia:
         self.vias = append(self.vias, t)
         return

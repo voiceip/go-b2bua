@@ -63,6 +63,10 @@ func (self *UacStateRinging) RecvResponse(resp sippy_types.SipResponse, tr sippy
     }
     if code < 200 {
         if rseq := resp.GetRSeq(); rseq != nil {
+            if ! tr.CheckRSeq(rseq) {
+                // bad RSeq number - ignore the response
+                return nil, nil
+            }
             to_body, err := resp.GetTo().GetBody(self.config)
             if err != nil {
                 self.config.ErrorLogger().Error("UacStateRinging::RecvResponse: #6: " + err.Error())
@@ -111,7 +115,6 @@ func (self *UacStateRinging) RecvResponse(resp sippy_types.SipResponse, tr sippy
     if code >= 200 && code < 300 {
         var to_body *sippy_header.SipAddress
         var rUri *sippy_header.SipAddress
-        var newstate sippy_types.UaState
         var cb func()
 
         to_body, err = resp.GetTo().GetBody(self.config)
@@ -151,15 +154,13 @@ func (self *UacStateRinging) RecvResponse(resp sippy_types.SipResponse, tr sippy
             event = NewCCEventConnect(code, reason, body, resp.GetRtime(), self.ua.GetOrigin())
             self.ua.StartCreditTimer(resp.GetRtime())
             self.ua.SetConnectTs(resp.GetRtime())
-            newstate = NewUaStateConnected(self.ua, self.config)
             cb = func() { self.ua.ConnCb(resp.GetRtime(), self.ua.GetOrigin()) }
         } else {
             event = NewCCEventPreConnect(code, reason, body, resp.GetRtime(), self.ua.GetOrigin())
             tr.SetUAck(true)
             self.ua.SetPendingTr(tr)
-            newstate = NewUaStateConnected(self.ua, self.config)
         }
-        self.ua.StartCreditTimer(resp.GetRtime())
+        newstate := NewUaStateConnected(self.ua, self.config)
         if body != nil {
             if self.ua.HasOnRemoteSdpChange() {
                 self.ua.OnRemoteSdpChange(body, func (x sippy_types.MsgBody) { self.ua.DelayedRemoteSdpUpdate(event, x) })
@@ -229,4 +230,8 @@ func (self *UacStateRinging) RecvEvent(event sippy_types.CCEvent) (sippy_types.U
         self.ua.SetDisconnectTs(now)
     }
     return NewUacStateCancelling(self.ua, self.config), func() { self.ua.DiscCb(event.GetRtime(), event.GetOrigin(), self.ua.GetLastScode(), nil) }, nil
+}
+
+func (self *UacStateRinging) ID() sippy_types.UaStateID {
+    return sippy_types.UAC_STATE_RINGING
 }

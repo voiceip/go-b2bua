@@ -1,4 +1,5 @@
-// Copyright (c) 2019 Sippy Software, Inc. All rights reserved.
+// Copyright (c) 2006-2020 Sippy Software, Inc. All rights reserved.
+// Copyright (c) 2020 Andrii Pylypenko. All rights reserved.
 //
 // All rights reserved.
 //
@@ -22,40 +23,26 @@
 // ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-package sippy
+package sippy_types
 
-import (
-    "sippy/sdp"
-    "sippy/types"
+type UaStateID int
+
+const (
+    UA_STATE_NONE = UaStateID(iota)
+
+    UAS_STATE_IDLE
+    UAS_STATE_TRYING
+    UAS_STATE_RINGING
+    UAS_STATE_UPDATING
+
+    UAC_STATE_IDLE
+    UAC_STATE_TRYING
+    UAC_STATE_RINGING
+    UAC_STATE_UPDATING
+    UAC_STATE_CANCELLING
+
+    UA_STATE_CONNECTED
+    UA_STATE_DISCONNECTED
+    UA_STATE_FAILED
+    UA_STATE_DEAD
 )
-
-type SdpSession struct {
-    last_origin *sippy_sdp.SdpOrigin
-    origin      *sippy_sdp.SdpOrigin
-}
-
-func NewSdpSession() *SdpSession {
-    return &SdpSession{
-        origin      : sippy_sdp.NewSdpOrigin(),
-    }
-}
-
-func (self *SdpSession) FixupVersion(body sippy_types.MsgBody) error {
-    if body == nil {
-        return nil
-    }
-    sdp, err := body.GetSdp()
-    if err != nil {
-        return err
-    }
-    new_origin := sdp.GetOHeader().GetCopy()
-    if self.last_origin != nil {
-        if self.last_origin.GetSessionId() != new_origin.GetSessionId() ||
-                self.last_origin.GetVersion() != new_origin.GetVersion() {
-            self.origin.IncVersion()
-        }
-    }
-    self.last_origin = new_origin
-    sdp.SetOHeader(self.origin.GetCopy())
-    return nil
-}

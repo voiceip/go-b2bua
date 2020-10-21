@@ -75,6 +75,10 @@ func (self *UacStateTrying) RecvResponse(resp sippy_types.SipResponse, tr sippy_
         }
     }
     if rseq := resp.GetRSeq(); rseq != nil {
+        if ! tr.CheckRSeq(rseq) {
+            // bad RSeq number - ignore the response
+            return nil, nil
+        }
         to_body, err := resp.GetTo().GetBody(self.config)
         if err != nil {
             self.config.ErrorLogger().Error("UacStateTrying::RecvResponse: #7: " + err.Error())
@@ -257,4 +261,8 @@ func (self *UacStateTrying) RecvEvent(event sippy_types.CCEvent) (sippy_types.Ua
     }
     //return nil, fmt.Errorf("uac-trying: wrong event %s in the Trying state", event.String())
     return nil, nil, nil
+}
+
+func (self *UacStateTrying) ID() sippy_types.UaStateID {
+    return sippy_types.UAC_STATE_TRYING
 }

@@ -51,3 +51,7 @@ func (self *UaStateDead) OnActivation() {
 func (self *UaStateDead) String() string {
     return "Dead"
 }
+
+func (self *UaStateDead) ID() sippy_types.UaStateID {
+    return sippy_types.UA_STATE_DEAD
+}

@@ -164,6 +164,7 @@ func (self *_rtpps_side) _on_sdp_change(sdp_body sippy_types.MsgBody, result_cal
         }
     }
     if len(sects) == 0 {
+        sdp_body.SetNeedsUpdate(false)
         result_callback(sdp_body)
         return nil
     }
@@ -198,8 +199,9 @@ func (self *_rtpps_side) _sdp_change_finish(cb_args *rtpproxy_update_result, sdp
         }
         if cb_args.sendonly {
             sect.RemoveAHeader("sendrecv")
-            sect.RemoveAHeader("sendonly")
-            sect.AddHeader("a", "sendonly")
+            if ! sect.HasAHeader([]string{ "recvonly", "sendonly", "inactive" }) {
+                sect.AddHeader("a", "sendonly")
+            }
         }
         if self.repacketize > 0 {
             sect.RemoveAHeader("ptime:")

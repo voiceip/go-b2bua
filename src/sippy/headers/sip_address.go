@@ -223,8 +223,20 @@ func (self *SipAddress) SetParam(name, value string) {
     self.params[name] = &value
 }
 
+func (self *SipAddress) GetParams() map[string]*string {
+    return self.params
+}
+
+func (self *SipAddress) SetParams(params map[string]*string) {
+    self.params = params
+}
+
 func (self *SipAddress) GetName() string {
     return self.name
+}
+
+func (self *SipAddress) SetName(name string) {
+    self.name = name
 }
 
 func (self *SipAddress) GetUrl() *SipURL {

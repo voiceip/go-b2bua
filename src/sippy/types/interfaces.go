@@ -231,7 +231,8 @@ type UA interface {
     SetCreditTime(time.Duration)
     ResetCreditTime(*sippy_time.MonoTime, map[int64]*sippy_time.MonoTime)
     ShouldUseRefer() bool
-    GetState() UaState
+    GetState() UaStateID
+    GetStateName() string
     Disconnect(*sippy_time.MonoTime, string)
     SetKaInterval(time.Duration)
     GetKaInterval() time.Duration
@@ -285,6 +286,7 @@ type UA interface {
     Cleanup()
     OnEarlyUasDisconnect(CCEvent) (int, string)
     SetExpireStartsOnSetup(bool)
+    PrRel() bool
 }
 
 type baseTransaction interface {
@@ -306,6 +308,7 @@ type ClientTransaction interface {
     BeforeRequestSent(SipRequest)
     TransmitData()
     SetOnSendComplete(func())
+    CheckRSeq(*sippy_header.SipRSeq) bool
 }
 
 type ServerTransaction interface {
@@ -320,7 +323,9 @@ type ServerTransaction interface {
     UpgradeToSessionLock(sync.Locker)
     SetServer(*sippy_header.SipServer)
     SetBeforeResponseSent(func(SipResponse))
+    SetPrackCBs(func(SipRequest), func(*sippy_time.MonoTime))
     Setup100rel(SipRequest)
+    PrRel() bool
 }
 
 type SipTransactionManager interface {
@@ -340,11 +345,13 @@ type UaState interface {
     RecvResponse(SipResponse, ClientTransaction) (UaState, func())
     RecvRequest(SipRequest, ServerTransaction) (UaState, func())
     Cancel(*sippy_time.MonoTime, SipRequest)
-    OnStateChange()
+    OnDeactivate()
     String() string
     OnActivation()
     RecvACK(SipRequest)
     IsConnected() bool
+    RecvPRACK(SipRequest)
+    ID() UaStateID
 }
 
 type CCEvent interface {

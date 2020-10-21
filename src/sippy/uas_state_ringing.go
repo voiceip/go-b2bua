@@ -49,7 +49,7 @@ func (self *UasStateRinging) String() string {
 
 func (self *UasStateRinging) RecvEvent(_event sippy_types.CCEvent) (sippy_types.UaState, func(), error) {
     eh := _event.GetExtraHeaders()
-    switch event :=_event.(type) {
+    switch event := _event.(type) {
     case *CCEventRing:
         code, reason, body := event.scode, event.scode_reason, event.body
         if code == 0 {
@@ -149,4 +149,8 @@ func (self *UasStateRinging) Cancel(rtime *sippy_time.MonoTime, req sippy_types.
     self.ua.SetDisconnectTs(rtime)
     self.ua.ChangeState(NewUaStateDisconnected(self.ua, self.config), func() { self.ua.DiscCb(rtime, self.ua.GetOrigin(), 0, req) })
     self.ua.EmitEvent(event)
+}
+
+func (self *UasStateRinging) ID() sippy_types.UaStateID {
+    return sippy_types.UAS_STATE_RINGING
 }

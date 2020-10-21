@@ -110,6 +110,7 @@ type Ua struct {
     uas_lossemul    int
     on_uac_setup_complete   func()
     expire_starts_on_setup  bool
+    pr_rel          bool
 }
 
 func (self *Ua) me() sippy_types.UA {
@@ -156,6 +157,7 @@ func NewUA(sip_tm sippy_types.SipTransactionManager, config sippy_conf.Config, n
         late_media      : false,
         heir            : heir,
         expire_starts_on_setup : true,
+        pr_rel          : false,
     }
 }
 
@@ -178,6 +180,7 @@ func (self *Ua) RecvRequest(req sippy_types.SipRequest, t sippy_types.ServerTran
     if self.state == nil {
         if req.GetMethod() == "INVITE" {
             t.Setup100rel(req)
+            self.pr_rel = t.PrRel()
             self.me().ChangeState(NewUasStateIdle(self.me(), self.config), nil)
         } else {
             return nil
@@ -189,10 +192,14 @@ func (self *Ua) RecvRequest(req sippy_types.SipRequest, t sippy_types.ServerTran
     }
     self.emitPendingEvents()
     if newstate != nil && req.GetMethod() == "INVITE" {
+        disc_fn := func(rtime *sippy_time.MonoTime) { self.me().Disconnect(rtime, "") }
+        if self.pr_rel {
+            t.SetPrackCBs(self.RecvPRACK, disc_fn)
+        }
         return &sippy_types.Ua_context{
             Response : nil,
             CancelCB : self.state.Cancel,
-            NoAckCB  : func(rtime *sippy_time.MonoTime) { self.me().Disconnect(rtime, "") },
+            NoAckCB  : disc_fn,
         }
     } else {
         return nil
@@ -336,7 +343,7 @@ func (self *Ua) credit_expires(rtime *sippy_time.MonoTime) {
 
 func (self *Ua) ChangeState(newstate sippy_types.UaState, cb func()) {
     if self.state != nil {
-        self.state.OnStateChange()
+        self.state.OnDeactivate()
     }
     self.state = newstate //.Newstate(self, self.config)
     if newstate != nil {
@@ -882,8 +889,18 @@ func (self *Ua) ShouldUseRefer() bool {
     return self.useRefer
 }
 
-func (self *Ua) GetState() sippy_types.UaState {
-    return self.state
+func (self *Ua) GetStateName() string {
+    if state := self.state; state != nil {
+        return state.String()
+    }
+    return "None"
+}
+
+func (self *Ua) GetState() sippy_types.UaStateID {
+    if state := self.state; state != nil {
+        return state.ID()
+    }
+    return sippy_types.UA_STATE_NONE
 }
 
 func (self *Ua) GetUsername() string {
@@ -1013,7 +1030,9 @@ func (self *Ua) GetConnectTs() *sippy_time.MonoTime {
 }
 
 func (self *Ua) SetConnectTs(connect_ts *sippy_time.MonoTime) {
-    self.connect_ts = connect_ts
+    if self.connect_ts == nil {
+        self.connect_ts = connect_ts
+    }
 }
 
 func (self *Ua) SetBranch(branch string) {
@@ -1197,4 +1216,15 @@ func (self *Ua) OnEarlyUasDisconnect(ev sippy_types.CCEvent) (int, string) {
 
 func (self *Ua) SetExpireStartsOnSetup(v bool) {
     self.expire_starts_on_setup = v
+}
+
+func (self *Ua) RecvPRACK(req sippy_types.SipRequest) {
+    state := self.state
+    if state != nil {
+        state.RecvPRACK(req)
+    }
+}
+
+func (self *Ua) PrRel() bool {
+    return self.pr_rel
 }

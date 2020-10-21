@@ -73,6 +73,9 @@ func (self *UasStateTrying) RecvEvent(_event sippy_types.CCEvent) (sippy_types.U
         if self.ua.GetP1xxTs() == nil {
             self.ua.SetP1xxTs(event.GetRtime())
         }
+        if self.ua.PrRel() {
+            return NewUasStateRingingRel(self.ua, self.config), func() { self.ua.RingCb(event.GetRtime(), event.GetOrigin(), code) }, nil
+        }
         return NewUasStateRinging(self.ua, self.config), func() { self.ua.RingCb(event.GetRtime(), event.GetOrigin(), code) }, nil
     case *CCEventPreConnect:
         code, reason, body := event.scode, event.scode_reason, event.body
@@ -134,4 +137,8 @@ func (self *UasStateTrying) Cancel(rtime *sippy_time.MonoTime, req sippy_types.S
     self.ua.SetDisconnectTs(rtime)
     self.ua.ChangeState(NewUaStateDisconnected(self.ua, self.config), func() { self.ua.DiscCb(rtime, self.ua.GetOrigin(), 0, req) })
     self.ua.EmitEvent(event)
+}
+
+func (self *UasStateTrying) ID() sippy_types.UaStateID {
+    return sippy_types.UAS_STATE_TRYING
 }

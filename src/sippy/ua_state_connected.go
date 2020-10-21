@@ -260,7 +260,7 @@ func (self *UaStateConnected) RecvEvent(event sippy_types.CCEvent) (sippy_types.
     return nil, nil, nil
 }
 
-func (self *UaStateConnected) OnStateChange() {
+func (self *UaStateConnected) OnDeactivate() {
     if self.ka_controller != nil {
         self.ka_controller.Stop()
     }
@@ -291,4 +291,8 @@ func (self *UaStateConnected) RecvACK(req sippy_types.SipRequest) {
     }
     self.ua.Enqueue(event)
     return
+}
+
+func (self *UaStateConnected) ID() sippy_types.UaStateID {
+    return sippy_types.UA_STATE_CONNECTED
 }

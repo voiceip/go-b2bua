@@ -157,6 +157,9 @@ func ParseSipMsg(_buf []byte, rtime *sippy_time.MonoTime, config sippy_conf.Conf
     if self.cseq == nil {
         return nil, errors.New("CSeq HF is missed")
     }
+    if self.call_id == nil {
+        return nil, errors.New("Call-ID HF is missed")
+    }
     return self, nil
 }
 
